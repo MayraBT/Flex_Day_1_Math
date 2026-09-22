@@ -309,6 +309,11 @@
           <tr data-r="record"><td>Say it</td><td>Oral explanations</td></tr>
         </table>
         <p class="fine" style="margin:10px 0 0">Students feel what you just felt when directions leave the representation open: freedom for some, uncertainty for others. Both are worth planning for.</p>
+        <div class="links" style="margin-top:12px">
+          <button class="btn ghost sm" id="saveVac" type="button">Save my vacation as a postcard</button>
+          <button class="btn ghost sm" id="saveRec" type="button" style="display:none">Save my recording</button>
+          <span class="toast" id="vacToast" role="status"></span>
+        </div>
       </div>
       <div class="field" style="margin-top:14px">
         <label for="vacwhy">Which material did you reach for first, and why that one?</label>
@@ -557,10 +562,39 @@
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
       chunks=[]; rec=new MediaRecorder(stream); btn.textContent='Stop'; msg.textContent='Recording…';
       rec.ondataavailable=function(e){ chunks.push(e.data); };
-      rec.onstop=function(){ clearTimeout(recTimer); stream.getTracks().forEach(function(t){ t.stop(); }); var blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'}); au.src=URL.createObjectURL(blob); au.style.display='block'; btn.textContent='Record again'; msg.textContent='Saved on this device for this session. Play it back below.'; markUsed('record'); };
+      rec.onstop=function(){ clearTimeout(recTimer); stream.getTracks().forEach(function(t){ t.stop(); }); var blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'}); au.src=URL.createObjectURL(blob); recBlobUrl=au.src; document.getElementById('saveRec').style.display='inline-flex'; au.style.display='block'; btn.textContent='Record again'; msg.textContent='Saved on this device for this session. Play it back below.'; markUsed('record'); };
       rec.start(); recTimer=setTimeout(function(){ if(rec.state==='recording') rec.stop(); },60000);
     }).catch(function(){ msg.textContent='The microphone isn\'t available (permission was denied or no mic was found). Allow the microphone in your browser\'s address bar and try again, or use another material.'; });
   });
+
+
+  /* postcard */
+  function postcard(cb){
+    var W=1000, pad=40, y=pad; var out=document.createElement('canvas'); var g=out.getContext('2d');
+    var words=(document.getElementById('vac').value||'').trim(); var stks=state.dream.stickers||[];
+    var hasSk=!!state.dream.sketch, hasCol=stks.length>0;
+    var lines=[]; if(words){ g.font='24px "Source Sans 3",Arial,sans-serif'; var tmp=document.createElement('canvas').getContext('2d'); tmp.font=g.font; words.split(/\n/).forEach(function(par){ var cur=''; par.split(' ').forEach(function(w){ var t=cur?cur+' '+w:w; if(tmp.measureText(t).width>W-2*pad){ lines.push(cur); cur=w; } else cur=t; }); lines.push(cur); }); }
+    var H=pad+90+(hasSk?(W-2*pad)*0.5+30:0)+(hasCol?330:0)+(lines.length?lines.length*32+20:0)+50;
+    out.width=W; out.height=H;
+    g.fillStyle='#FFFFFF'; g.fillRect(0,0,W,H); g.fillStyle='#2D5A8A'; g.fillRect(0,0,W,12);
+    g.fillStyle='#1F4468'; g.font='bold 40px "Source Sans 3",Arial,sans-serif'; g.fillText('My dream vacation',pad,pad+40);
+    g.fillStyle='#5A6573'; g.font='18px "Source Sans 3",Arial,sans-serif'; g.fillText('Multiple Representations · Mathematics Flex Day 1 · '+new Date().toLocaleDateString(),pad,pad+66); y=pad+90;
+    function finish(){
+      if(hasCol){ g.fillStyle='#F3F6F9'; g.fillRect(pad,y,W-2*pad,300); g.strokeStyle='#B9C3D2'; g.strokeRect(pad,y,W-2*pad,300); g.font='44px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; g.textBaseline='top'; stks.forEach(function(st){ g.fillText(st.c,pad+st.x/100*(W-2*pad),y+st.y/100*300); }); g.textBaseline='alphabetic'; y+=330; }
+      if(lines.length){ g.fillStyle='#1A2431'; g.font='24px "Source Sans 3",Arial,sans-serif'; lines.forEach(function(l){ y+=32; g.fillText(l,pad,y); }); y+=20; }
+      g.fillStyle='#5A6573'; g.font='16px "Source Sans 3",Arial,sans-serif'; g.fillText('Materials used: '+Object.keys(state.dream.used).join(', '),pad,H-24);
+      cb(out.toDataURL('image/png'));
+    }
+    if(hasSk){ var im=new Image(); im.onload=function(){ var w=W-2*pad, h=w*0.5; g.fillStyle='#fff'; g.fillRect(pad,y,w,h); g.drawImage(im,pad,y,w,h); g.strokeStyle='#B9C3D2'; g.strokeRect(pad,y,w,h); y+=h+30; finish(); }; im.src=state.dream.sketch; } else finish();
+  }
+  function offerFile(url,name,label){
+    var a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    var t=document.getElementById('vacToast'); t.textContent=label; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },4000);
+    var w=null; if(!/^blob:|^data:/.test(location.href)){ /* also open in a tab so it can be saved if downloads are blocked */ try{ w=window.open(url,'_blank'); }catch(x){} }
+  }
+  document.getElementById('saveVac').addEventListener('click',function(){ if(!Object.keys(state.dream.used).length){ return; } postcard(function(url){ offerFile(url,'my-dream-vacation.png','Postcard saved (check your downloads, or the new tab).'); }); });
+  var recBlobUrl='';
+  document.getElementById('saveRec').addEventListener('click',function(){ if(recBlobUrl) offerFile(recBlobUrl,'my-dream-vacation-audio.webm','Recording saved.'); });
 
   /* ---------- quiz ---------- */
   var QUESTIONS=[
