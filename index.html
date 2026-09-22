@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multiple Representations Choice Session</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --navy:#2D5A8A; --navy-deep:#1F4468; --ink:#1A2431; --muted:#5A6573;
@@ -570,22 +570,77 @@
 
   /* postcard */
   function postcard(cb){
-    var W=1000, pad=40, y=pad; var out=document.createElement('canvas'); var g=out.getContext('2d');
+    var W=1200, H=800, GAP=40, cream='#FBF7EE', ink='#2B3A4A', navy='#2D5A8A', orange='#E8722C', muted='#7A8594';
     var words=(document.getElementById('vac').value||'').trim(); var stks=state.dream.stickers||[];
-    var hasSk=!!state.dream.sketch, hasCol=stks.length>0;
-    var lines=[]; if(words){ g.font='24px "Source Sans 3",Arial,sans-serif'; var tmp=document.createElement('canvas').getContext('2d'); tmp.font=g.font; words.split(/\n/).forEach(function(par){ var cur=''; par.split(' ').forEach(function(w){ var t=cur?cur+' '+w:w; if(tmp.measureText(t).width>W-2*pad){ lines.push(cur); cur=w; } else cur=t; }); lines.push(cur); }); }
-    var H=pad+90+(hasSk?(W-2*pad)*0.5+30:0)+(hasCol?330:0)+(lines.length?lines.length*32+20:0)+50;
-    out.width=W; out.height=H;
-    g.fillStyle='#FFFFFF'; g.fillRect(0,0,W,H); g.fillStyle='#2D5A8A'; g.fillRect(0,0,W,12);
-    g.fillStyle='#1F4468'; g.font='bold 40px "Source Sans 3",Arial,sans-serif'; g.fillText('My dream vacation',pad,pad+40);
-    g.fillStyle='#5A6573'; g.font='18px "Source Sans 3",Arial,sans-serif'; g.fillText('Multiple Representations · Mathematics Flex Day 1 · '+new Date().toLocaleDateString(),pad,pad+66); y=pad+90;
-    function finish(){
-      if(hasCol){ g.fillStyle='#F3F6F9'; g.fillRect(pad,y,W-2*pad,300); g.strokeStyle='#B9C3D2'; g.strokeRect(pad,y,W-2*pad,300); g.font='44px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; g.textBaseline='top'; stks.forEach(function(st){ g.fillText(st.c,pad+st.x/100*(W-2*pad),y+st.y/100*300); }); g.textBaseline='alphabetic'; y+=330; }
-      if(lines.length){ g.fillStyle='#1A2431'; g.font='24px "Source Sans 3",Arial,sans-serif'; lines.forEach(function(l){ y+=32; g.fillText(l,pad,y); }); y+=20; }
-      g.fillStyle='#5A6573'; g.font='16px "Source Sans 3",Arial,sans-serif'; g.fillText('Materials used: '+Object.keys(state.dream.used).join(', '),pad,H-24);
+    var hasSk=!!state.dream.sketch, hasCol=stks.length>0, usedList=Object.keys(state.dream.used);
+    var out=document.createElement('canvas'); out.width=W; out.height=H*2+GAP; var g=out.getContext('2d');
+    g.fillStyle='#C9D2DE'; g.fillRect(0,0,out.width,out.height);
+    function card(y){ g.save(); g.shadowColor='rgba(0,0,0,.25)'; g.shadowBlur=18; g.shadowOffsetY=6; g.fillStyle=cream; g.fillRect(0,y,W,H); g.restore(); }
+    function rr(x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+    function wrap(text,font,maxW){ g.font=font; var lines=[]; text.split(/\n/).forEach(function(par){ var cur=''; par.split(' ').forEach(function(w){ var t=cur?cur+' '+w:w; if(g.measureText(t).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=t; }); lines.push(cur); }); return lines; }
+    function drawFront(){
+      card(0);
+      // picture area with white photo border
+      var px=36, py=36, pw=W-72, ph=H-72;
+      g.fillStyle='#FFFFFF'; g.fillRect(px,py,pw,ph);
+      var ix=px+16, iy=py+16, iw=pw-32, ih=ph-32;
+      // sky/sea backdrop
+      var grad=g.createLinearGradient(0,iy,0,iy+ih); grad.addColorStop(0,'#CFE6F7'); grad.addColorStop(.62,'#EAF4FB'); grad.addColorStop(.63,'#5FA8D3'); grad.addColorStop(1,'#2D5A8A'); g.fillStyle=grad; g.fillRect(ix,iy,iw,ih);
+      g.fillStyle='#FFD86B'; g.beginPath(); g.arc(ix+iw-140,iy+120,70,0,Math.PI*2); g.fill();
+      function afterSketch(){
+        if(hasCol){ g.font='72px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; g.textBaseline='top'; stks.forEach(function(st){ g.fillText(st.c,ix+st.x/100*iw,iy+st.y/100*ih); }); g.textBaseline='alphabetic'; }
+        // banner
+        var text='Greetings from', big='MY DREAM VACATION';
+        g.font='bold 96px "Caveat","Source Sans 3",sans-serif'; var bw=g.measureText(big).width;
+        g.font='bold 46px "Caveat",cursive'; var sw=g.measureText(text).width;
+        var bx=ix+40, by=iy+ih-40;
+        g.save(); g.translate(bx,by); g.rotate(-0.04);
+        g.font='bold 96px "Caveat",cursive'; g.lineWidth=14; g.strokeStyle='#FFFFFF'; g.lineJoin='round'; g.strokeText(big,0,0); g.fillStyle=orange; g.fillText(big,0,0);
+        g.font='bold 46px "Caveat",cursive'; g.lineWidth=10; g.strokeText(text,6,-84); g.fillStyle=navy; g.fillText(text,6,-84);
+        g.restore();
+        drawBack();
+      }
+      if(hasSk){ var im=new Image(); im.onload=function(){ var w=iw*0.78, h=w*0.5, x=ix+(iw-w)/2, y=iy+40; g.save(); g.globalAlpha=.96; g.fillStyle='#fff'; rr(x-10,y-10,w+20,h+20,10); g.fill(); g.restore(); g.drawImage(im,x,y,w,h); afterSketch(); }; im.src=state.dream.sketch; } else afterSketch();
+    }
+    function drawBack(){
+      var Y=H+GAP; card(Y);
+      // top caption
+      g.fillStyle=muted; g.font='600 16px "Source Sans 3",sans-serif'; g.letterSpacing='2px'; g.fillText('POST CARD',40,Y+50); g.letterSpacing='0px';
+      g.font='14px "Source Sans 3",sans-serif'; g.fillText('Multiple Representations · Mathematics Flex Day 1 · Dallas ISD',40,Y+72);
+      // divider
+      g.strokeStyle='#C7BFA9'; g.lineWidth=2; g.beginPath(); g.moveTo(W/2,Y+40); g.lineTo(W/2,Y+H-40); g.stroke();
+      // stamp
+      var sx=W-60-150, sy=Y+40, sw=150, sh=180;
+      g.fillStyle='#FFFFFF'; g.fillRect(sx,sy,sw,sh);
+      g.save(); g.strokeStyle='#FFFFFF'; g.lineWidth=8; g.setLineDash([0,14]); g.lineCap='round'; g.strokeRect(sx,sy,sw,sh); g.restore();
+      g.fillStyle=navy; g.fillRect(sx+12,sy+12,sw-24,sh-24);
+      // pentagon on the stamp (the five representations)
+      g.save(); g.translate(sx+sw/2,sy+sh/2-10); g.strokeStyle='#FFD86B'; g.lineWidth=3; var R=44; g.beginPath(); for(var k=0;k<5;k++){ var ang=-Math.PI/2+k*2*Math.PI/5; var x=R*Math.cos(ang), y=R*Math.sin(ang); k?g.lineTo(x,y):g.moveTo(x,y); } g.closePath(); g.stroke();
+      g.beginPath(); for(var k2=0;k2<5;k2++){ var a1=-Math.PI/2+k2*2*Math.PI/5, a2=-Math.PI/2+((k2+2)%5)*2*Math.PI/5; g.moveTo(R*Math.cos(a1),R*Math.sin(a1)); g.lineTo(R*Math.cos(a2),R*Math.sin(a2)); } g.stroke();
+      g.fillStyle='#FFD86B'; for(var k3=0;k3<5;k3++){ var a=-Math.PI/2+k3*2*Math.PI/5; g.beginPath(); g.arc(R*Math.cos(a),R*Math.sin(a),6,0,Math.PI*2); g.fill(); } g.restore();
+      g.fillStyle='#FFFFFF'; g.font='bold 13px "Source Sans 3",sans-serif'; g.textAlign='center'; g.fillText('ALL MEANS ALL',sx+sw/2,sy+sh-28); g.font='11px "Source Sans 3",sans-serif'; g.fillText('5 REPRESENTATIONS',sx+sw/2,sy+sh-14); g.textAlign='left';
+      // postmark
+      var cx=sx-70, cy=sy+80; g.save(); g.strokeStyle='#5B6675'; g.lineWidth=2.5; g.globalAlpha=.85;
+      g.beginPath(); g.arc(cx,cy,52,0,Math.PI*2); g.stroke(); g.beginPath(); g.arc(cx,cy,42,0,Math.PI*2); g.stroke();
+      for(var w=0;w<5;w++){ g.beginPath(); for(var t=0;t<=1;t+=.05){ var wx=cx-50-t*150, wy=cy-24+w*12+Math.sin(t*12)*3; t?g.lineTo(wx,wy):g.moveTo(wx,wy); } g.stroke(); }
+      g.fillStyle='#5B6675'; g.textAlign='center'; g.font='bold 12px "Source Sans 3",sans-serif'; g.fillText('DALLAS, TX',cx,cy-8); g.font='bold 15px "Source Sans 3",sans-serif'; g.fillText(new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase(),cx,cy+10); g.font='10px "Source Sans 3",sans-serif'; g.fillText('FLEX DAY 1',cx,cy+26); g.textAlign='left'; g.restore();
+      // address lines
+      var ax=W/2+50, ay=Y+320; g.fillStyle=ink; g.font='500 34px "Caveat",cursive'; g.fillText('To:  Me, the first week I teach this lesson',ax,ay);
+      g.strokeStyle='#B9B1A0'; g.lineWidth=1.5; for(var l=1;l<=3;l++){ g.beginPath(); g.moveTo(ax,ay+l*62); g.lineTo(W-60,ay+l*62); g.stroke(); }
+      g.font='500 30px "Caveat",cursive'; g.fillStyle=ink; g.fillText('Representations used: '+usedList.join(', '),ax,ay+58);
+      g.fillText('Room: my classroom',ax,ay+120);
+      g.fillStyle=muted; g.font='12px "Source Sans 3",sans-serif'; g.fillText('Every material here maps to a Quality Work Criteria representation.',ax,Y+H-50);
+      // message
+      var mx=40, my=Y+120, mw=W/2-80;
+      g.fillStyle=ink; g.font='500 40px "Caveat",cursive'; g.fillText('Dear future me,',mx,my);
+      var body=words||'(I '+(hasSk?'sketched':'')+(hasSk&&hasCol?' and ':'')+(hasCol?'built':'')+' my dream vacation instead of writing it.)';
+      var lines=wrap(body,'500 32px "Caveat",cursive',mw); var ly=my+50; var maxLines=Math.floor((Y+H-110-ly)/40);
+      lines.slice(0,maxLines).forEach(function(l,i){ g.fillText(i===maxLines-1&&lines.length>maxLines?l+' …':l,mx,ly+i*40); });
+      g.font='500 34px "Caveat",cursive'; g.fillText('Wish you were here,',mx,Y+H-80); g.fillText('— me',mx,Y+H-44);
       cb(out.toDataURL('image/png'));
     }
-    if(hasSk){ var im=new Image(); im.onload=function(){ var w=W-2*pad, h=w*0.5; g.fillStyle='#fff'; g.fillRect(pad,y,w,h); g.drawImage(im,pad,y,w,h); g.strokeStyle='#B9C3D2'; g.strokeRect(pad,y,w,h); y+=h+30; finish(); }; im.src=state.dream.sketch; } else finish();
+    var fontsReady=(document.fonts&&document.fonts.load)?Promise.all([document.fonts.load('bold 96px "Caveat"'),document.fonts.load('500 32px "Caveat"'),document.fonts.load('bold 16px "Source Sans 3"')]).catch(function(){}):Promise.resolve();
+    fontsReady.then(drawFront);
   }
   function offerFile(url,name,label){
     var a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
